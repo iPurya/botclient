@@ -9,6 +9,8 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+from urllib.request import urlopen
+from time import sleep
 import telebot
 import threading
 
@@ -76,7 +78,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.userPic.setMinimumSize(QtCore.QSize(50, 50))
         self.userPic.setMaximumSize(QtCore.QSize(50, 50))
         self.userPic.setText("")
-        self.userPic.setPixmap(QtGui.QPixmap("default_pic.jpg"))
+        self.default_pic = QtGui.QPixmap("default_pic.jpg")
+        self.userPic.setPixmap(self.default_pic)
         self.userPic.setScaledContents(True)
         self.userPic.setObjectName("userPic")
         self.userInfoGridLayout.addWidget(self.userPic, 0, 0, 2, 1)
@@ -148,14 +151,29 @@ class MyWin(Ui_MainWindow):
         self.bot_id = None
         self.bot_name = None
         self.bot_username = None
+        self.exit = False
+    def set_profile_pic(self,userid):
+        chat = self.telebot.get_chat(userid)
+        if chat.photo:
+            file_info = self.telebot.get_file(chat.photo.small_file_id)
+            photo = urlopen(f'https://api.telegram.org/file/bot{self.token}/{file_info.file_path}').read()
+            pixmap = QtGui.QPixmap()
+            pixmap.loadFromData(photo)
+            self.userPic.setPixmap(pixmap)
+        else:
+            self.userPic.setPixmap(self.default_pic)
+    
     def login_handle(self,event):
         if self.loginButton.text() == "Login":
             inp = self.TokenInput.text()
             try:
                 self.telebot = telebot.TeleBot(inp)
                 me = self.telebot.get_me()
+                self.token = inp
                 self.bot_id, self.bot_name, self.bot_username = me.id, me.first_name, me.username
                 self.userInfoLabel.setText(f"{me.first_name}\n@{me.username}\n{me.id}")
+                self.set_profile_pic(self.bot_id)
+                self.telebot.set_update_listener(self.update_handler)
                 self.infoLabel.setText("")
                 self.textEdit.setText(f"Logged in as {me.first_name}")
                 self.loginButton.setText("Logout")
@@ -168,10 +186,29 @@ class MyWin(Ui_MainWindow):
             self.loginButton.setText("Login")
             self.TokenInput.setEnabled(True)
             self.telebot.stop_bot()
-    def set_profile_pic()
+            self.telebot = None
+    def polling(self):
+        while True:
+            if self.exit:
+                return
+            if self.telebot:
+                self.telebot.polling()
+            sleep(1)
+    
+    def update_handler(self,messages):
+        for message in messages:
+            print(message.text)
+
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
     ui = MyWin()
+    threading.Thread(target=ui.polling,daemon=True).start()
     ui.show()
-    sys.exit(app.exec_())
+    app.exec_()
+    if ui.telebot:
+        ui.telebot.stop_bot()
+    ui.exit = True
+    sleep(2)
+    sys.exit(0)    
+        
