@@ -144,7 +144,7 @@
            <property name="frameShadow">
             <enum>QFrame::Raised</enum>
            </property>
-           <layout class="QGridLayout" name="gridLayout" columnstretch="1,5,5">
+           <layout class="QGridLayout" name="gridLayout" columnstretch="1,5">
             <property name="leftMargin">
              <number>10</number>
             </property>
@@ -163,13 +163,6 @@
             <property name="verticalSpacing">
              <number>0</number>
             </property>
-            <item row="0" column="1">
-             <widget class="QLabel" name="userFullname">
-              <property name="text">
-               <string>TextLabel</string>
-              </property>
-             </widget>
-            </item>
             <item row="1" column="1">
              <widget class="QLabel" name="userId">
               <property name="text">
@@ -177,8 +170,15 @@
               </property>
              </widget>
             </item>
+            <item row="0" column="1">
+             <widget class="QLabel" name="userFullname">
+              <property name="text">
+               <string>TextLabel</string>
+              </property>
+             </widget>
+            </item>
             <item row="0" column="0" rowspan="2">
-             <widget class="QFrame" name="profileImage">
+             <widget class="QLabel" name="userPic">
               <property name="minimumSize">
                <size>
                 <width>50</width>
@@ -190,6 +190,21 @@
                 <width>50</width>
                 <height>50</height>
                </size>
+              </property>
+              <property name="sizeIncrement">
+               <size>
+                <width>50</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+              <property name="pixmap">
+               <pixmap>pic.jpg</pixmap>
+              </property>
+              <property name="scaledContents">
+               <bool>true</bool>
               </property>
              </widget>
             </item>
