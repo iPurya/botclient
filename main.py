@@ -189,10 +189,10 @@ class MyWin(Ui_MainWindow):
             self.telebot = None
     def polling(self):
         while True:
+            if self.telebot:
+                self.telebot.polling(long_polling_timeout=5)
             if self.exit:
                 return
-            if self.telebot:
-                self.telebot.polling()
             sleep(1)
     
     def update_handler(self,messages):
