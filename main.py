@@ -152,6 +152,8 @@ class MyWin(Ui_MainWindow):
         self.bot_name = None
         self.bot_username = None
         self.exit = False
+        self.unread_messages_count = {}
+        self.chat_peer = {}
     def set_profile_pic(self,userid):
         chat = self.telebot.get_chat(userid)
         if chat.photo:
@@ -195,10 +197,30 @@ class MyWin(Ui_MainWindow):
                 return
             sleep(1)
     
+    def get_chat_name(self,userid):
+        return self.chat_peer.get(userid,None)
+    def get_chat_id(self,name):
+        if not name in self.chat_peer.values():
+            return None
+        return list(self.chat_peer.keys())[list(self.chat_peer.values()).index(name)]
+    def find_in_list(self,chat_id):
+        try: return self.chatsList.findItems(f"{self.get_chat_name(chat_id)} ({self.unread_messages_count[chat_id]})",QtCore.Qt.MatchExactly)[0]
+        except: return None
     def update_handler(self,messages):
         for message in messages:
-            print(message.text)
-
+            chat_type = message.chat.type
+            chat_id = message.chat.id
+            if chat_type == "private":
+                title = f"{message.chat.first_name}{' ' + message.chat.last_name if message.chat.last_name else ''}"
+            else:
+                title = message.chat.title
+            
+            self.chatsList.takeItem(
+                self.chatsList.row(
+                    self.find_in_list(chat_id)))
+            self.unread_messages_count[chat_id] = self.unread_messages_count.get(chat_id,0) + 1
+            self.chat_peer[chat_id] = title
+            self.chatsList.insertItem(0, f"{title} ({self.unread_messages_count[chat_id]})")
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
