@@ -147,11 +147,14 @@ class MyWin(Ui_MainWindow):
         self.setupUi()
         self.loginButton.clicked.connect(self.login_handle)
         self.chatsList.itemClicked.connect(self.chat_clicked)
+        self.sendButton.clicked.connect(self.send_message)
+        self.sendButton.setEnabled(False)
         self.telebot = None
         self.infoLabel.setText("Please login first!")
         self.bot_id = None
         self.bot_name = None
         self.bot_username = None
+        self.open_chat_id = 0
         self.exit = False
         self.unread_messages_count = {}
         self.chat_peer = {}
@@ -231,14 +234,18 @@ class MyWin(Ui_MainWindow):
         chat_id = int(event.whatsThis())        
         chat = self.telebot.get_chat(chat_id)
         title = self.get_title(chat)
-
-        
         event.setText(title)
         self.unread_messages_count[chat_id] = 0
         username = "@"+chat.username if chat.username else ""
         self.userInfoLabel.setText(f"{title}\n{username}\n{chat.id}")
         self.set_profile_pic(chat)
-
+        self.open_chat_id = chat_id
+        self.sendButton.setEnabled(True)
+    def send_message(self,event):
+        text = self.sendText.toPlainText()
+        if text:
+            self.telebot.send_message(self.open_chat_id,text)
+            self.sendText.setPlainText("")
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
