@@ -146,6 +146,7 @@ class MyWin(Ui_MainWindow):
         super().__init__()
         self.setupUi()
         self.loginButton.clicked.connect(self.login_handle)
+        self.chatsList.itemClicked.connect(self.chat_clicked)
         self.telebot = None
         self.infoLabel.setText("Please login first!")
         self.bot_id = None
@@ -154,8 +155,7 @@ class MyWin(Ui_MainWindow):
         self.exit = False
         self.unread_messages_count = {}
         self.chat_peer = {}
-    def set_profile_pic(self,userid):
-        chat = self.telebot.get_chat(userid)
+    def set_profile_pic(self,chat):
         if chat.photo:
             file_info = self.telebot.get_file(chat.photo.small_file_id)
             photo = urlopen(f'https://api.telegram.org/file/bot{self.token}/{file_info.file_path}').read()
@@ -174,7 +174,7 @@ class MyWin(Ui_MainWindow):
                 self.token = inp
                 self.bot_id, self.bot_name, self.bot_username = me.id, me.first_name, me.username
                 self.userInfoLabel.setText(f"{me.first_name}\n@{me.username}\n{me.id}")
-                self.set_profile_pic(self.bot_id)
+                self.set_profile_pic(self.telebot.get_chat(self.bot_id))
                 self.telebot.set_update_listener(self.update_handler)
                 self.infoLabel.setText("")
                 self.textEdit.setText(f"Logged in as {me.first_name}")
@@ -204,23 +204,41 @@ class MyWin(Ui_MainWindow):
             return None
         return list(self.chat_peer.keys())[list(self.chat_peer.values()).index(name)]
     def find_in_list(self,chat_id):
-        try: return self.chatsList.findItems(f"{self.get_chat_name(chat_id)} ({self.unread_messages_count[chat_id]})",QtCore.Qt.MatchExactly)[0]
+        try: 
+            for item in self.chatsList.findItems(self.get_chat_name(chat_id),QtCore.Qt.MatchStartsWith):
+                if item.whatsThis() == str(chat_id): return item
         except: return None
+    def get_title(self,chat):
+        return f"{chat.first_name}{' ' + chat.last_name if chat.last_name else ''}" if chat.type == "private" else chat.title
+
     def update_handler(self,messages):
         for message in messages:
             chat_type = message.chat.type
             chat_id = message.chat.id
-            if chat_type == "private":
-                title = f"{message.chat.first_name}{' ' + message.chat.last_name if message.chat.last_name else ''}"
-            else:
-                title = message.chat.title
+            title = self.get_title(message.chat)
             
             self.chatsList.takeItem(
                 self.chatsList.row(
                     self.find_in_list(chat_id)))
             self.unread_messages_count[chat_id] = self.unread_messages_count.get(chat_id,0) + 1
             self.chat_peer[chat_id] = title
-            self.chatsList.insertItem(0, f"{title} ({self.unread_messages_count[chat_id]})")
+            item = QtWidgets.QListWidgetItem()
+            item.setText(f"{title} ({self.unread_messages_count[chat_id]})")
+            item.setWhatsThis(str(chat_id))
+            self.chatsList.insertItem(0, item)
+    
+    def chat_clicked(self,event):
+        chat_id = int(event.whatsThis())        
+        chat = self.telebot.get_chat(chat_id)
+        title = self.get_title(chat)
+
+        
+        event.setText(title)
+        self.unread_messages_count[chat_id] = 0
+        username = "@"+chat.username if chat.username else ""
+        self.userInfoLabel.setText(f"{title}\n{username}\n{chat.id}")
+        self.set_profile_pic(chat)
+
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
