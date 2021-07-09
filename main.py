@@ -13,6 +13,10 @@ from urllib.request import urlopen
 from time import sleep
 import telebot
 import threading
+import random
+from datetime import datetime
+from essential_generators import DocumentGenerator
+gen = DocumentGenerator()
 
 class Ui_MainWindow(QtWidgets.QMainWindow):
     def setupUi(self):
@@ -158,6 +162,16 @@ class MyWin(Ui_MainWindow):
         self.exit = False
         self.unread_messages_count = {}
         self.chat_peer = {}
+        
+    def add_chat(self,date,title=None,text="",color=None):
+        if not color:
+            if not text: color = "#2ECC71"
+            elif not title: color = "#0055ff" ; title = "You: "
+            else: color = "#ff0000" ; title += ": "
+        text = text.replace("\n", "<br>")
+        self.textEdit.insertHtml(f'<p><span style="color:#85929e;">{datetime.strftime(date, "%m/%d/%Y %H:%M")}</span> <span style=" font-weight:700; color:#2e4053;">|</span> <span style=" font-weight:700; color:{color};">{title}</span> {text}<br></p>')
+    def clear_chat(self):
+        self.textEdit.clear()
     def set_profile_pic(self,chat):
         if chat.photo:
             file_info = self.telebot.get_file(chat.photo.small_file_id)
@@ -180,14 +194,15 @@ class MyWin(Ui_MainWindow):
                 self.set_profile_pic(self.telebot.get_chat(self.bot_id))
                 self.telebot.set_update_listener(self.update_handler)
                 self.infoLabel.setText("")
-                self.textEdit.setText(f"Logged in as {me.first_name}")
+                self.add_chat(datetime.now(),f"Logged in as {me.first_name}")
                 self.loginButton.setText("Logout")
                 self.TokenInput.setEnabled(False)
             except telebot.apihelper.ApiTelegramException:
-                self.textEdit.setText(f"Token invalid!")
+                self.add_chat(datetime.now(),"Token invalid!",color="red")
+                self.telebot = None
         else: #logout
             self.infoLabel.setText("Please login first!")
-            self.textEdit.setText(f"Logged out")
+            self.add_chat(datetime.now(),"Logged out")
             self.loginButton.setText("Login")
             self.TokenInput.setEnabled(True)
             self.telebot.stop_bot()
@@ -219,14 +234,20 @@ class MyWin(Ui_MainWindow):
             chat_type = message.chat.type
             chat_id = message.chat.id
             title = self.get_title(message.chat)
-            
+
+            item = QtWidgets.QListWidgetItem()
             self.chatsList.takeItem(
                 self.chatsList.row(
                     self.find_in_list(chat_id)))
-            self.unread_messages_count[chat_id] = self.unread_messages_count.get(chat_id,0) + 1
             self.chat_peer[chat_id] = title
-            item = QtWidgets.QListWidgetItem()
-            item.setText(f"{title} ({self.unread_messages_count[chat_id]})")
+
+            if self.open_chat_id == chat_id:
+                item.setText(title)
+                self.add_chat(datetime.fromtimestamp(message.date),title,message.text)
+            else:
+                self.unread_messages_count[chat_id] = self.unread_messages_count.get(chat_id,0) + 1
+                item.setText(f"{title} ({self.unread_messages_count[chat_id]})")
+            
             item.setWhatsThis(str(chat_id))
             self.chatsList.insertItem(0, item)
     
@@ -241,10 +262,12 @@ class MyWin(Ui_MainWindow):
         self.set_profile_pic(chat)
         self.open_chat_id = chat_id
         self.sendButton.setEnabled(True)
+        self.clear_chat()
     def send_message(self,event):
         text = self.sendText.toPlainText()
         if text:
-            self.telebot.send_message(self.open_chat_id,text)
+            sent = self.telebot.send_message(self.open_chat_id,text)
+            self.add_chat(datetime.fromtimestamp(sent.date),text=text)
             self.sendText.setPlainText("")
 if __name__ == "__main__":
     import sys
