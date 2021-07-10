@@ -14,6 +14,7 @@ from time import sleep
 import telebot
 import threading
 import random
+from re import match
 from datetime import datetime
 from essential_generators import DocumentGenerator
 gen = DocumentGenerator()
@@ -163,12 +164,13 @@ class MyWin(Ui_MainWindow):
         self.unread_messages_count = {}
         self.chat_peer = {}
         
-    def add_chat(self,date,title=None,text="",msg_id=None,color=None):
+    def add_chat(self,date,title=None,text="",msg_id=None,reply_to=None,color=None):
         if not color:
             if not text: color = "#2ECC71"
             elif not title: color = "#0055ff" ; title = "You: "
             else: color = "#ff0000" ; title += ": "
-        msg_id = f" {msg_id} |" if msg_id else ""
+        reply_to = f" -> {reply_to}" if reply_to else ""
+        msg_id = f" {msg_id}{reply_to} |" if msg_id else ""
         text = text.replace("\n", "<br>")
         self.textEdit.insertHtml(f'<p><span style="color:#85929e;">{datetime.strftime(date, "%m/%d/%Y %H:%M")}</span> <span style=" font-weight:700; color:#2e4053;">|{msg_id}</span> <span style=" font-weight:700; color:{color};">{title}</span> {text}<br></p>')
     def clear_chat(self):
@@ -244,7 +246,7 @@ class MyWin(Ui_MainWindow):
 
             if self.open_chat_id == chat_id:
                 item.setText(title)
-                self.add_chat(datetime.fromtimestamp(message.date),title,message.text,msg_id=message.id)
+                self.add_chat(datetime.fromtimestamp(message.date),title,message.text,msg_id=message.id,reply_to=message.reply_to_message.id if message.reply_to_message else "")
             else:
                 self.unread_messages_count[chat_id] = self.unread_messages_count.get(chat_id,0) + 1
                 item.setText(f"{title} ({self.unread_messages_count[chat_id]})")
@@ -266,9 +268,12 @@ class MyWin(Ui_MainWindow):
         self.clear_chat()
     def send_message(self,event):
         text = self.sendText.toPlainText()
+        reply_to = None
         if text:
-            sent = self.telebot.send_message(self.open_chat_id,text)
-            self.add_chat(datetime.fromtimestamp(sent.date),text=text,msg_id=sent.id)
+            if x := match(r"![Rr](\d+) (.*)",text):
+                reply_to, text = x.groups()
+            sent = self.telebot.send_message(self.open_chat_id,text,reply_to_message_id=reply_to)
+            self.add_chat(datetime.fromtimestamp(sent.date),text=text,msg_id=sent.id,reply_to=sent.reply_to_message.id if sent.reply_to_message else "")
             self.sendText.setPlainText("")
 if __name__ == "__main__":
     import sys
