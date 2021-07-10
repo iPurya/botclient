@@ -163,13 +163,14 @@ class MyWin(Ui_MainWindow):
         self.unread_messages_count = {}
         self.chat_peer = {}
         
-    def add_chat(self,date,title=None,text="",color=None):
+    def add_chat(self,date,title=None,text="",msg_id=None,color=None):
         if not color:
             if not text: color = "#2ECC71"
             elif not title: color = "#0055ff" ; title = "You: "
             else: color = "#ff0000" ; title += ": "
+        msg_id = f" {msg_id} |" if msg_id else ""
         text = text.replace("\n", "<br>")
-        self.textEdit.insertHtml(f'<p><span style="color:#85929e;">{datetime.strftime(date, "%m/%d/%Y %H:%M")}</span> <span style=" font-weight:700; color:#2e4053;">|</span> <span style=" font-weight:700; color:{color};">{title}</span> {text}<br></p>')
+        self.textEdit.insertHtml(f'<p><span style="color:#85929e;">{datetime.strftime(date, "%m/%d/%Y %H:%M")}</span> <span style=" font-weight:700; color:#2e4053;">|{msg_id}</span> <span style=" font-weight:700; color:{color};">{title}</span> {text}<br></p>')
     def clear_chat(self):
         self.textEdit.clear()
     def set_profile_pic(self,chat):
@@ -243,7 +244,7 @@ class MyWin(Ui_MainWindow):
 
             if self.open_chat_id == chat_id:
                 item.setText(title)
-                self.add_chat(datetime.fromtimestamp(message.date),title,message.text)
+                self.add_chat(datetime.fromtimestamp(message.date),title,message.text,msg_id=message.id)
             else:
                 self.unread_messages_count[chat_id] = self.unread_messages_count.get(chat_id,0) + 1
                 item.setText(f"{title} ({self.unread_messages_count[chat_id]})")
@@ -267,7 +268,7 @@ class MyWin(Ui_MainWindow):
         text = self.sendText.toPlainText()
         if text:
             sent = self.telebot.send_message(self.open_chat_id,text)
-            self.add_chat(datetime.fromtimestamp(sent.date),text=text)
+            self.add_chat(datetime.fromtimestamp(sent.date),text=text,msg_id=sent.id)
             self.sendText.setPlainText("")
 if __name__ == "__main__":
     import sys
