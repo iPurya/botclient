@@ -231,7 +231,8 @@ class MyWin(Ui_MainWindow):
         except: return None
     def get_title(self,chat):
         return f"{chat.first_name}{' ' + chat.last_name if chat.last_name else ''}" if chat.type == "private" else chat.title
-
+    def sender_name(self,user):
+        return f"{user.first_name}{' ' + user.last_name if user.last_name else ''}"
     def update_handler(self,messages):
         for message in messages:
             chat_type = message.chat.type
@@ -246,7 +247,8 @@ class MyWin(Ui_MainWindow):
 
             if self.open_chat_id == chat_id:
                 item.setText(title)
-                self.add_chat(datetime.fromtimestamp(message.date),title,message.text,msg_id=message.id,reply_to=message.reply_to_message.id if message.reply_to_message else "")
+                from_name = self.sender_name(message.from_user)
+                self.add_chat(datetime.fromtimestamp(message.date),from_name,message.text,msg_id=message.id,reply_to=message.reply_to_message.id if message.reply_to_message else "")
             else:
                 self.unread_messages_count[chat_id] = self.unread_messages_count.get(chat_id,0) + 1
                 item.setText(f"{title} ({self.unread_messages_count[chat_id]})")
@@ -272,7 +274,7 @@ class MyWin(Ui_MainWindow):
         if text:
             if x := match(r"![Rr](\d+) (.*)",text):
                 reply_to, text = x.groups()
-            sent = self.telebot.send_message(self.open_chat_id,text,reply_to_message_id=reply_to)
+            sent = self.telebot.send_message(self.open_chat_id,text,reply_to_message_id=reply_to,parse_mode="markdown")
             self.add_chat(datetime.fromtimestamp(sent.date),text=text,msg_id=sent.id,reply_to=sent.reply_to_message.id if sent.reply_to_message else "")
             self.sendText.setPlainText("")
 if __name__ == "__main__":
