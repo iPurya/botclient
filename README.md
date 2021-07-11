@@ -1,7 +1,7 @@
-# botcli
+# BotClient
 Graphical telegram bot chat app
 
-##TODO
+## TODO
 
 - [ ] Cyrcle border radius for profile picture
 - [ ] Big preview for profile picture when clicking on it
