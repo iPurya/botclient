@@ -106,9 +106,10 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.chatHistoryLayout.setContentsMargins(0, 0, 0, 0)
         self.chatHistoryLayout.setSpacing(0)
         self.chatHistoryLayout.setObjectName("chatHistoryLayout")
-        self.textEdit = QtWidgets.QTextEdit(self.chatHistoryFrame)
+        self.textEdit = QtWidgets.QTextBrowser(self.chatHistoryFrame)
         self.textEdit.setReadOnly(True)
         self.textEdit.setObjectName("textEdit")
+        self.textEdit.setOpenExternalLinks(True)
         self.chatHistoryLayout.addWidget(self.textEdit)
         self.chatLayout.addWidget(self.chatHistoryFrame)
         self.sendFrame = QtWidgets.QFrame(self.chatFrame)
@@ -235,8 +236,10 @@ class MyWin(Ui_MainWindow):
         return f"{user.first_name}{' ' + user.last_name if user.last_name else ''}"
     def update_handler(self,messages):
         for message in messages:
+            content_type = message.content_type
             chat_type = message.chat.type
             chat_id = message.chat.id
+            text = message.text
             title = self.get_title(message.chat)
 
             item = QtWidgets.QListWidgetItem()
@@ -248,7 +251,7 @@ class MyWin(Ui_MainWindow):
             if self.open_chat_id == chat_id:
                 item.setText(title)
                 from_name = self.sender_name(message.from_user)
-                self.add_chat(datetime.fromtimestamp(message.date),from_name,message.text,msg_id=message.id,reply_to=message.reply_to_message.id if message.reply_to_message else "")
+                self.add_chat(datetime.fromtimestamp(message.date),from_name,text,msg_id=message.id,reply_to=message.reply_to_message.id if message.reply_to_message else "")
             else:
                 self.unread_messages_count[chat_id] = self.unread_messages_count.get(chat_id,0) + 1
                 item.setText(f"{title} ({self.unread_messages_count[chat_id]})")
