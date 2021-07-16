@@ -19,7 +19,7 @@ from datetime import datetime
 from essential_generators import DocumentGenerator
 gen = DocumentGenerator()
 
-class Ui_MainWindow(QtWidgets.QMainWindow):
+class BotClientWindow(QtWidgets.QMainWindow):
     def setupUi(self):
         self.setObjectName("MainWindow")
         self.resize(991, 509)
@@ -147,7 +147,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.sendButton.setText(_translate("MainWindow", "Send"))
 
 
-class MyWin(Ui_MainWindow):
+class ActionsHandle(BotClientWindow):
     def __init__(self):
         super().__init__()
         self.setupUi()
@@ -247,7 +247,35 @@ class MyWin(Ui_MainWindow):
                 self.chatsList.row(
                     self.find_in_list(chat_id)))
             self.chat_peer[chat_id] = title
+            item.setWhatsThis(str(chat_id))
+            self.chatsList.insertItem(0, item)
 
+            if content_type != "text":
+                print(content_type)
+                caption = message.caption or ""
+                file_id = None
+                if content_type == "photo":
+                    file_id = message.photo[-1].file_id
+                elif content_type == "video":
+                    file_id = message.video.file_id
+                elif content_type == "sticker":
+                    file_id = message.sticker.file_id
+                elif content_type == "document":
+                    file_id = message.document.file_id
+                elif content_type == "animation":
+                    file_id = message.animation.file_id
+                elif content_type == "voice":
+                    file_id = message.voice.file_id
+                elif content_type == "audio":
+                    file_id = message.audio.file_id
+                else:
+                    text = f'<span style=" font-weight:700; color:#aa00ff;">{content_type.title()}: unsupported</span>'
+                if file_id:
+                    file_info = self.telebot.get_file(file_id)
+                    print(file_info)
+                    media_url = f'https://api.telegram.org/file/bot{self.token}/{file_info.file_path}'
+                    text  = f'<span style=" font-weight:700; color:#aa00ff;">{content_type.title()}: </span><a href="{media_url}">{file_info.file_path}</a>'
+                text += " — " + caption if caption else ""
             if self.open_chat_id == chat_id:
                 item.setText(title)
                 from_name = self.sender_name(message.from_user)
@@ -256,9 +284,6 @@ class MyWin(Ui_MainWindow):
                 self.unread_messages_count[chat_id] = self.unread_messages_count.get(chat_id,0) + 1
                 item.setText(f"{title} ({self.unread_messages_count[chat_id]})")
             
-            item.setWhatsThis(str(chat_id))
-            self.chatsList.insertItem(0, item)
-    
     def chat_clicked(self,event):
         chat_id = int(event.whatsThis())        
         chat = self.telebot.get_chat(chat_id)
@@ -283,13 +308,13 @@ class MyWin(Ui_MainWindow):
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
-    ui = MyWin()
-    threading.Thread(target=ui.polling,daemon=True).start()
-    ui.show()
+    handler = ActionsHandle()
+    threading.Thread(target=handler.polling,daemon=True).start()
+    handler.show()
     app.exec_()
-    if ui.telebot:
-        ui.telebot.stop_bot()
-    ui.exit = True
+    if handler.telebot:
+        handler.telebot.stop_bot()
+    handler.exit = True
     sleep(2)
     sys.exit(0)    
         
